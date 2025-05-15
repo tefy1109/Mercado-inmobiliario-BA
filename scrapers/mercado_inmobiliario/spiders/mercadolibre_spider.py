@@ -9,7 +9,7 @@ class MercadolibreSpider(scrapy.Spider):
     
     # URLs para departamentos en venta en Buenos Aires Capital
     start_urls = [
-        'https://www.mercadolibre.com.ar/departamentos-venta-capital-federal.html',
+        'https://inmuebles.mercadolibre.com.ar/departamentos/venta/capital-federal/',
     ]
     
     # Configurar número máximo de páginas a scrapear (para desarrollo)
@@ -22,57 +22,97 @@ class MercadolibreSpider(scrapy.Spider):
         'ROBOTSTXT_OBEY': True
     }
     
+    def __init__(self, max_pages=None, *args, **kwargs):
+        super(MercadolibreSpider, self).__init__(*args, **kwargs)
+        if max_pages:
+            self.max_pages = int(max_pages)
+        self.logger.info(f"Spider inicializado con max_pages={self.max_pages}")
+    
     def parse(self, response):
-        # Extraer listado de propiedades
-        property_listings = response.css('div.postings-container div.posting-card')
+        # Extraer listado de propiedades - selector actualizado más flexible
+        property_listings = response.css('ol.ui-search-layout li.ui-search-layout__item, div.ui-search-results div[class*="ui-search-result"]')
+        
+        self.logger.info(f"Encontradas {len(property_listings)} propiedades en {response.url}")
         
         for listing in property_listings:
-            # Obtener la URL del detalle de la propiedad
-            detail_url = listing.css('a.go-to-posting::attr(href)').get()
+            # Obtener la URL del detalle de la propiedad - selector actualizado
+            detail_url = listing.css('a.ui-search-result__content::attr(href), a.ui-search-link::attr(href)').get()
             if detail_url:
                 # Llamar a la página de detalle para obtener información completa
+                self.logger.info(f"Siguiendo: {detail_url}")
                 yield response.follow(detail_url, callback=self.parse_property)
         
         # Paginación: ir a la siguiente página si existe y no hemos llegado al límite
         if self.current_page < self.max_pages:
-            next_page = response.css('a.pagination__page-next::attr(href)').get()
+            next_page = response.css('a.andes-pagination__link[title="Siguiente"]::attr(href), a.ui-search-link[title="Siguiente"]::attr(href), li.andes-pagination__button--next a::attr(href)').get()
             if next_page:
                 self.current_page += 1
+                self.logger.info(f"Navegando a página {self.current_page}: {next_page}")
                 yield response.follow(next_page, callback=self.parse)
-    
+            else:
+                self.logger.info("No se encontró siguiente página")
+
     def parse_property(self, response):
         """Extraer la información detallada de una propiedad"""
         try:
-            # Extraer precio y moneda
-            price_text = response.css('div.price-container span.price::text').get()
+            self.logger.info(f"Procesando propiedad: {response.url}")
+            
+            # Extraer precio y moneda - selectores actualizados
+            price_text = response.css('span.andes-money-amount__fraction::text, span.price-tag-fraction::text').get()
+            currency_text = response.css('span.andes-money-amount__currency-symbol::text, span.price-tag-symbol::text').get()
+            
+            self.logger.debug(f"Precio encontrado: {price_text}, Moneda: {currency_text}")
+            
             currency = None
             price = None
             
             if price_text:
-                price_text = price_text.strip()
-                if 'U$S' in price_text:
+                price = self.extract_numbers(price_text)
+                
+            if currency_text:
+                currency_text = currency_text.strip().upper()
+                if 'U$S' in currency_text or 'USD' in currency_text:
                     currency = 'USD'
-                    price = self.extract_numbers(price_text)
-                elif '$' in price_text:
+                elif '$' in currency_text or 'ARS' in currency_text or 'PESOS' in currency_text:
                     currency = 'ARS'
-                    price = self.extract_numbers(price_text)
             
-            # Extraer características
+            # Extraer características - selectores más flexibles
             features = {}
-            feature_items = response.css('ul.main-features li')
-            for item in feature_items:
-                feature_text = ' '.join(item.css('*::text').getall()).strip()
-                if 'dormitorio' in feature_text.lower() or 'ambiente' in feature_text.lower():
-                    features['dormitorios'] = self.extract_numbers(feature_text)
-                elif 'baño' in feature_text.lower():
-                    features['banos'] = self.extract_numbers(feature_text)
-                elif 'm² totales' in feature_text.lower():
-                    features['superficie_total'] = self.extract_numbers(feature_text)
-                elif 'm² cubiertos' in feature_text.lower():
-                    features['superficie_cubierta'] = self.extract_numbers(feature_text)
             
-            # Extraer ubicación
-            location = response.css('h2.title-location::text').get()
+            # Métodos de extracción de características
+            # 1. Desde las especificaciones destacadas
+            feature_items = response.css('div.ui-vip-highlighted-specs__specs-item, div[class*="highlighted-specs"] div[class*="specs-item"]')
+            for item in feature_items:
+                label = item.css('p[class*="key-text"]::text, span[class*="label"]::text').get()
+                value = item.css('p[class*="value-text"]::text, span[class*="value"]::text').get()
+                
+                if label and value:
+                    self.extract_feature(label, value, features)
+            
+            # 2. Desde la tabla de especificaciones
+            spec_rows = response.css('div.ui-pdp-specs__table div.ui-pdp-specs__table-row, table[class*="specs"] tr')
+            for row in spec_rows:
+                label = row.css('th::text, td:first-child::text').get()
+                value = row.css('td::text, td:last-child::text').get()
+                
+                if label and value:
+                    self.extract_feature(label, value, features)
+            
+            # 3. Desde otros formatos comunes
+            ambientes = response.xpath('//p[contains(text(), "ambiente") or contains(text(), "Ambiente")]/text()').get()
+            if ambientes:
+                features['ambientes'] = self.extract_numbers(ambientes)
+            
+            dormitorios = response.xpath('//p[contains(text(), "dormitorio") or contains(text(), "Dormitorio") or contains(text(), "habitación")]/text()').get()
+            if dormitorios:
+                features['dormitorios'] = self.extract_numbers(dormitorios)
+                
+            banos = response.xpath('//p[contains(text(), "baño") or contains(text(), "Baño")]/text()').get()
+            if banos:
+                features['banos'] = self.extract_numbers(banos)
+            
+            # Extraer ubicación - selector actualizado
+            location = response.css('div.ui-vip-location p::text, div[class*="location"] p::text, h3[class*="location"]::text').get()
             neighborhood = None
             district = None
             
@@ -83,21 +123,17 @@ class MercadolibreSpider(scrapy.Spider):
                 if len(location_parts) >= 2:
                     district = location_parts[1].strip()
             
-            # Extraer tipo de propiedad
-            property_type = response.css('div.title-container h3.title::text').get()
+            # Extraer tipo de propiedad - selector actualizado
+            property_type = response.css('div.ui-pdp-header__subtitle::text, p[class*="subtitle"]::text').get()
             if property_type:
                 property_type = property_type.strip()
             
-            # Extraer amenities
-            amenities = []
-            amenities_items = response.css('div.amenities ul.amenities-list li')
-            for item in amenities_items:
-                amenity = item.css('::text').get()
-                if amenity:
-                    amenities.append(amenity.strip())
+            # Extraer descripción - selector actualizado
+            description = ' '.join(
+                response.css('div.ui-pdp-description__content p::text, div[class*="description"] p::text').getall() or \
+                response.xpath('//div[contains(@class, "description")]//p//text()').getall()
+            )
             
-            # Extraer descripción
-            description = ' '.join(response.css('div.description-container p::text').getall())
             if description:
                 description = description.strip()
             
@@ -107,7 +143,7 @@ class MercadolibreSpider(scrapy.Spider):
             # Generar el item final
             yield {
                 'url': response.url,
-                'titulo': response.css('div.title-container h3.title::text').get().strip(),
+                'titulo': response.css('h1.ui-pdp-title::text').get().strip() if response.css('h1.ui-pdp-title::text').get() else "Sin título",
                 'tipo_propiedad': property_type,
                 'precio': price,
                 'moneda': currency,
@@ -115,16 +151,36 @@ class MercadolibreSpider(scrapy.Spider):
                 'distrito': district,
                 'dormitorios': features.get('dormitorios'),
                 'banos': features.get('banos'),
+                'ambientes': features.get('ambientes'),
                 'superficie_total': features.get('superficie_total'),
                 'superficie_cubierta': features.get('superficie_cubierta'),
                 'amenities': amenities,
                 'descripcion': description,
                 'fecha_extraccion': extraction_date,
-                'fuente': 'zonaprop'
+                'fuente': 'mercadolibre'  # Corregido de 'zonaprop' a 'mercadolibre'
             }
             
         except Exception as e:
-            logging.error(f"Error procesando {response.url}: {str(e)}")
+            self.logger.error(f"Error procesando {response.url}: {str(e)}", exc_info=True)
+    
+    def extract_feature(self, label, value, features):
+        """Extrae y categoriza características basadas en etiquetas"""
+        if not label or not value:
+            return
+            
+        label = label.lower().strip()
+        value = value.strip()
+        
+        if any(term in label for term in ['dormitorio', 'habitacion', 'habitación', 'cuarto']):
+            features['dormitorios'] = self.extract_numbers(value)
+        elif any(term in label for term in ['baño', 'banio']):
+            features['banos'] = self.extract_numbers(value)
+        elif any(term in label for term in ['superficie total', 'área total', 'm² totales']):
+            features['superficie_total'] = self.extract_numbers(value)
+        elif any(term in label for term in ['superficie cubierta', 'área cubierta', 'm² cubiertos']):
+            features['superficie_cubierta'] = self.extract_numbers(value)
+        elif any(term in label for term in ['ambiente', 'ambientes']):
+            features['ambientes'] = self.extract_numbers(value)
     
     def extract_numbers(self, text):
         """Extraer números de un texto"""
