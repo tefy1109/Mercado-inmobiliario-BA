@@ -1,18 +1,22 @@
-Date: Mon, 19 May 2025 16:26:41 GMT
-Content-Type: text/html;charset=UTF-8
-X-Uuid: fa171885-7e75-4f4f-a459-f2e485f2e35f
-Link: <https://img10.naventcdn.com>; rel=preconnect, <https://img10.naventcdn.com/listado/RPLISv8.200.0-RC1/react-dom.js>; rel=preload; as=script, <https://img10.naventcdn.com/listado/RPLISv8.200.0-RC1/main.js>; rel=preload; as=script
-Cache-Control: public, max-age=600, s-maxage=3600, stale-while-revalidate=1800
-Cache-Sort-Seed: RandomName_19-05-2025-11-4
+Date: Tue, 27 May 2025 02:39:18 GMT
+Content-Type: text/html; charset=UTF-8
+Accept-Ch: Sec-CH-UA-Bitness, Sec-CH-UA-Arch, Sec-CH-UA-Full-Version, Sec-CH-UA-Mobile, Sec-CH-UA-Model, Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Platform, Sec-CH-UA, UA-Bitness, UA-Arch, UA-Full-Version, UA-Mobile, UA-Model, UA-Platform-Version, UA-Platform, UA
+Cf-Mitigated: challenge
+Critical-Ch: Sec-CH-UA-Bitness, Sec-CH-UA-Arch, Sec-CH-UA-Full-Version, Sec-CH-UA-Mobile, Sec-CH-UA-Model, Sec-CH-UA-Platform-Version, Sec-CH-UA-Full-Version-List, Sec-CH-UA-Platform, Sec-CH-UA, UA-Bitness, UA-Arch, UA-Full-Version, UA-Mobile, UA-Model, UA-Platform-Version, UA-Platform, UA
+Cross-Origin-Embedder-Policy: require-corp
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Resource-Policy: same-origin
+Origin-Agent-Cluster: ?1
+Permissions-Policy: accelerometer=(),autoplay=(),browsing-topics=(),camera=(),clipboard-read=(),clipboard-write=(),geolocation=(),gyroscope=(),hid=(),interest-cohort=(),magnetometer=(),microphone=(),payment=(),publickey-credentials-get=(),screen-wake-lock=(),serial=(),sync-xhr=(),usb=()
+Referrer-Policy: same-origin
+Server-Timing: chlray;desc="9462241a4e27b4da"
 X-Content-Type-Options: nosniff
-X-Xss-Protection: 1; mode=block
-Strict-Transport-Security: max-age=31536000 ; includeSubDomains
 X-Frame-Options: SAMEORIGIN
-Vary: accept-encoding
-Cf-Cache-Status: EXPIRED
-Set-Cookie: __cf_bm=siOdkzM0cjhqy6R5LnohLZS5eF3GfnIjPBVth4XdmI0-1747672001-1.0.1.1-Ii0yhbvadR9wq1.0pfMnLv58dlvYrqEuTeWuHBcseNlefNRDfn35UHxgcoYeVCaJ3fxzIzsMBlx6w.OpmJA034_XuEH29r5ldayCc3KrfmRagO3IFpnsFyfZcs9o92bo; path=/; expires=Mon, 19-May-25 16:56:41 GMT; domain=.zonaprop.com.ar; HttpOnly; Secure; SameSite=None
-Set-Cookie: _cfuvid=HX390sNFce1rNUR0m5w_U9jtX6ZiuTip8QgtK2KIlmo-1747672001438-0.0.1.1-604800000; path=/; domain=.zonaprop.com.ar; HttpOnly; Secure; SameSite=None
+Cache-Control: private, max-age=0, no-store, no-cache, must-revalidate, post-check=0, pre-check=0
+Expires: Thu, 01 Jan 1970 00:00:01 GMT
+Set-Cookie: __cf_bm=sJvDTK.P1PplBuMDE_0VAC36U5fXRSJZ.6PyxD6ENFI-1748313558-1.0.1.1-o9Bl3lKJpxV25GZ9nVHn4mO446.aZusKPCORKBAn2Ks5zK9gZJQvaKqElMIfL4wip71QsVT4bNvJIo5RR4hLoO2_lsuumVBmCnBi6yU8C.fj7WdOf35eUf_076xL6CAb; path=/; expires=Tue, 27-May-25 03:09:18 GMT; domain=.zonaprop.com.ar; HttpOnly; Secure; SameSite=None
+Vary: Accept-Encoding
 Server: cloudflare
-Cf-Ray: 9424f514cc3aab37-EZE
-Content-Encoding: br
+Cf-Ray: 9462241a4e27b4da-SCL
+Content-Encoding: gzip
 Alt-Svc: h3=":443"; ma=86400

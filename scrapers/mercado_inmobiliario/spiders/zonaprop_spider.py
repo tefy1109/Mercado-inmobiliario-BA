@@ -1,343 +1,195 @@
 import scrapy
-from scrapy.exceptions import CloseSpider
-import logging
-import time
+import re
 import random
-import os
-from urllib.parse import urlparse
+import time
+from urllib.parse import urljoin
+
 
 class ZonapropSpider(scrapy.Spider):
     name = 'zonaprop_spider'
     allowed_domains = ['zonaprop.com.ar']
-    start_urls = ['https://zonaprop.com.ar/departamentos-alquiler-flores.html']
+    start_urls = [
+        'https://www.zonaprop.com.ar/departamentos-alquiler-flores.html',
+    ]
     
-    max_pages = 20
-    pages_visited = 0
-    debug_enabled = False  # Deshabilitar debug por defecto
-    properties_found = 0
+    custom_settings = {
+        'DOWNLOAD_DELAY': 7,  # Mayor delay
+        'RANDOMIZE_DOWNLOAD_DELAY': True,
+        'CONCURRENT_REQUESTS': 1,
+        'CONCURRENT_REQUESTS_PER_DOMAIN': 1,
+        # Desactivar cache para evitar problemas con 403
+        'HTTPCACHE_ENABLED': False,
+        # Más intentos de retry
+        'RETRY_TIMES': 8,
+        # Headers personalizados
+        'DEFAULT_REQUEST_HEADERS': {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+            'Accept-Language': 'es-AR,es;q=0.8,en-US;q=0.5,en;q=0.3',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'same-origin',
+            'Sec-Fetch-User': '?1',
+            'Pragma': 'no-cache',
+            'Cache-Control': 'no-cache',
+        }
+    }
 
-    def __init__(self, *args, **kwargs):
-        super(ZonapropSpider, self).__init__(*args, **kwargs)
-        if 'max_pages' in kwargs:
-            self.max_pages = int(kwargs.get('max_pages'))
-        if 'start_url' in kwargs:
-            self.start_urls = [kwargs.get('start_url')]
-        
-        # Crear directorio de debug solo una vez
-        self.debug_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), 'debug')
-        
-        # Configuración para reducir la cantidad de archivos debug
-        self.save_debug_every_n_pages = 5  # Solo guardar debug cada N páginas
-        self.save_properties_debug = False  # No guardar debug de páginas de propiedades
+    def start_requests(self):
+        """Método para iniciar las solicitudes"""
+        for url in self.start_urls:
+            # Usar Google como referer para la primera solicitud
+            headers = {
+                'Referer': 'https://www.google.com/search?q=alquiler+departamentos+flores+zonaprop',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
+            }
+            
+            # Añadir cookies que simulan navegación previa
+            cookies = {
+                'visita_id': str(random.randint(1000000, 9999999)),
+                'c_user_id': str(random.randint(1000000, 9999999)),
+                'c_visitor_id': str(random.randint(1000000, 9999999)),
+                'gdpr': 'true',
+                '_ga': f'GA1.3.{random.randint(1000000, 9999999)}.{int(time.time())}',
+                '_gid': f'GA1.3.{random.randint(1000000, 9999999)}.{int(time.time())}',
+            }
+            
+            # Simulamos que venimos de Google
+            self.logger.info(f"Iniciando solicitud a {url} con referer de Google")
+            yield scrapy.Request(
+                url=url, 
+                callback=self.parse,
+                headers=headers,
+                cookies=cookies,
+                meta={'cookiejar': 1},  # Usar un cookiejar para mantener las cookies
+                dont_filter=True
+            )
 
     def parse(self, response):
-        self.pages_visited += 1
+        """Extrae los datos de las propiedades desde la página principal"""
+        # Debug - Guardar la respuesta para inspección
+        with open('debug_response.html', 'wb') as f:
+            f.write(response.body)
         
-        # Verificar si fuimos bloqueados o hay un desafío de Cloudflare
-        if response.status in [403, 429]:
-            self.logger.error(f"Acceso bloqueado con código {response.status}. URL: {response.url}")
-            yield {
-                'url': response.url,
-                'error': f"Error {response.status} - Acceso denegado",
-                'fecha_extraccion': time.strftime('%Y-%m-%d'),
-                'fuente': 'ZonaProp',
+        self.logger.info(f"Status: {response.status}, URL: {response.url}")
+        
+        # Si obtenemos un 403, no podemos continuar
+        if response.status == 403:
+            self.logger.error("Recibimos un error 403 Forbidden. El sitio está bloqueando nuestras solicitudes.")
+            return
+            
+        # Selector para los contenedores de propiedades
+        property_containers = response.css('div.postingCard')
+        self.logger.info(f"Encontrados {len(property_containers)} contenedores de propiedades")
+        
+        # Si no encontramos propiedades con el selector habitual, intentamos con otros selectores
+        if not property_containers:
+            property_containers = response.css('div[data-qa="posting PROPERTY"]')
+            self.logger.info(f"Segundo intento: Encontrados {len(property_containers)} contenedores de propiedades")
+        
+        for container in property_containers:
+            item = {}
+            
+            try:
+                # Precio de alquiler
+                price_element = container.css('div.postingCard-module__price-container div:first-child::text').get()
+                if price_element:
+                    # Limpia el precio (remueve $ y puntos)
+                    price_clean = re.sub(r'[^\d]', '', price_element)
+                    item['precio_alquiler'] = int(price_clean) if price_clean else None
+                else:
+                    item['precio_alquiler'] = None
+                
+                # Expensas
+                expenses_element = container.css('div.postingCard-module__price-container div:nth-child(2)::text').get()
+                if expenses_element:
+                    expenses_clean = re.sub(r'[^\d]', '', expenses_element)
+                    item['expensas'] = int(expenses_clean) if expenses_clean else None
+                else:
+                    item['expensas'] = None
+                
+                # Dirección
+                address_element = container.css('div.postingCard-module__location::text').get()
+                item['direccion'] = address_element.strip() if address_element else None
+                
+                # Zona hardcodeada como "Flores" según tu ejemplo
+                item['zona'] = 'Flores'
+                
+                # Características de la propiedad (superficie, ambientes, habitaciones, baños)
+                features = container.css('h3 span::text').getall()
+                
+                # Inicializar valores por defecto
+                item['superficie'] = None
+                item['ambientes'] = None
+                item['habitaciones'] = None
+                item['banos'] = None
+                
+                # Procesar las características en orden
+                for i, feature in enumerate(features):
+                    feature_clean = feature.strip()
+                    
+                    if i == 0:  # Superficie
+                        surface_match = re.search(r'(\d+)', feature_clean)
+                        item['superficie'] = int(surface_match.group(1)) if surface_match else None
+                    
+                    elif i == 1:  # Ambientes
+                        amb_match = re.search(r'(\d+)', feature_clean)
+                        ambientes = int(amb_match.group(1)) if amb_match else None
+                        item['ambientes'] = ambientes
+                        
+                        # Si ambientes = 1, entonces habitaciones = 0
+                        if ambientes == 1:
+                            item['habitaciones'] = 0
+                    
+                    elif i == 2:  # Habitaciones (solo si ambientes != 1)
+                        if item['ambientes'] != 1:
+                            hab_match = re.search(r'(\d+)', feature_clean)
+                            item['habitaciones'] = int(hab_match.group(1)) if hab_match else None
+                    
+                    elif i == 3:  # Baños
+                        bath_match = re.search(r'(\d+)', feature_clean)
+                        item['banos'] = int(bath_match.group(1)) if bath_match else None
+                
+                # Descripción/Título
+                description_element = container.css('h3 a::text').get()
+                item['descripcion'] = description_element.strip() if description_element else None
+                
+                # URL de la propiedad (opcional, para referencia)
+                property_url = container.css('h3 a::attr(href)').get()
+                item['url'] = urljoin(response.url, property_url) if property_url else None
+                
+                yield item
+                
+            except Exception as e:
+                self.logger.error(f"Error procesando propiedad: {e}")
+                continue
+            
+            # Sleep aleatorio entre ítems para parecer más humano
+            time.sleep(random.uniform(0.5, 2.0))
+        
+        # Paginación con delay adicional para parecer más humano
+        next_page = response.css('a.pagination-module__next::attr(href)').get()
+        if next_page:
+            self.logger.info(f"Siguiente página encontrada: {next_page}")
+            # Delay aleatorio antes de ir a la siguiente página
+            time.sleep(random.uniform(5.0, 10.0))
+            
+            headers = {
+                'Referer': response.url,  # La página actual como referer
+                'User-Agent': random.choice([
+                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
+                    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Safari/605.1.15',
+                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/117.0'
+                ])
             }
-            return
-        
-        # Verificar si estamos en un desafío de Cloudflare
-        if "Just a moment" in response.text or "Cloudflare" in response.text:
-            self.logger.warning(f"Posible desafío de Cloudflare en {response.url}")
-            return
             
-        # Solo guardar debug para algunas páginas para reducir sobrecarga
-        if self.pages_visited % self.save_debug_every_n_pages == 1:
-            os.makedirs(self.debug_dir, exist_ok=True)
-            debug_file = os.path.join(self.debug_dir, f"zonaprop_page_{self.pages_visited}.html")
-            with open(debug_file, 'w', encoding='utf-8') as f:
-                f.write(response.text)
-            self.logger.info(f"HTML guardado en {debug_file} para diagnóstico")
-
-        # Extraer enlaces a propiedades - Selectores optimizados basados en el HTML actual
-        property_links = []
-        
-        # Reducir cantidad de selectores para mayor eficiencia, usando los más efectivos
-        main_selectors = [
-            '//div[contains(@class, "postingCard-module__posting-description")]/a/@href',
-            '//h3[contains(@class, "postingCard-module__posting-description")]/a/@href',
-            '//div[contains(@class, "postingCardLayout-module__posting-card-layout")]/@data-to-posting',
-            '//div[contains(@data-qa, "posting PROPERTY")]/@data-to-posting'
-        ]
-        
-        # Probar con cada selector principal
-        for selector in main_selectors:
-            links = response.xpath(selector).getall()
-            if links:
-                property_links.extend(links)
-                self.logger.debug(f"Selector exitoso: {selector} - Encontrados: {len(links)}")
-        
-        # Si no se encontró nada, intentar con selectores secundarios
-        if not property_links:
-            backup_selectors = [
-                '//a[contains(@href, "propiedades/clasificado")]/@href',
-                '//div[contains(@class, "postingsList-module__card-container")]//a/@href'
-            ]
-            for selector in backup_selectors:
-                links = response.xpath(selector).getall()
-                if links:
-                    property_links.extend(links)
-
-        # Eliminar duplicados y filtrar enlaces de propiedades
-        seen = set()
-        property_links = [x for x in property_links if not (x in seen or seen.add(x))]
-        property_links = [link for link in property_links if 
-                         not any(exclude in link for exclude in ['contacto', 'login', 'registro', 'ayuda', 'terminos', '#'])]
-
-        self.properties_found += len(property_links)
-        self.logger.info(f"Página {self.pages_visited}: Encontradas {len(property_links)} propiedades (Total: {self.properties_found})")
-
-        # Procesar cada propiedad encontrada
-        for link in property_links:
-            if not link.startswith('http'):
-                link = f"https://www.zonaprop.com.ar{link}" if link.startswith('/') else f"https://www.zonaprop.com.ar/{link}"
-            
-            # Reducir el delay entre propiedades para acelerar el proceso
-            yield response.follow(link, callback=self.parse_property)
-
-        # Buscar enlace a la página siguiente
-        next_page_selectors = [
-            '//a[@aria-label="Siguiente"]/@href',
-            '//a[contains(@class, "pagination") and contains(text(), "Siguiente")]/@href',
-            '//li[contains(@class, "pagination")]/a[contains(text(), "Siguiente") or contains(@rel, "next")]/@href',
-            '//a[contains(@class, "pagination-next")]/@href'
-        ]
-        
-        next_page = None
-        for selector in next_page_selectors:
-            next_page = response.xpath(selector).get()
-            if next_page:
-                break
-            
-        # Navegar a la siguiente página si existe y no hemos superado el límite
-        if next_page and self.pages_visited < self.max_pages:
-            self.logger.info(f"Navegando a la siguiente página: {next_page}")
-            # Reducir el tiempo de espera para acelerar el proceso
-            yield response.follow(next_page, callback=self.parse)
-        else:
-            self.logger.info(f"Finalizada la extracción después de {self.pages_visited} páginas, encontradas {self.properties_found} propiedades")
-
-    def parse_property(self, response):
-        # Extraer datos optimizando los selectores
-        property_id = self.extract_property_id(response.url)
-        
-        # Extraer datos usando los mejores selectores basados en los debugs
-        precio_principal, moneda = self.extract_price_and_currency(response)
-        expensas = self.extract_expensas(response)
-        direccion = self.extract_location(response)
-        barrio_zona = self.extract_zone(response)
-        superficie = self.extract_area(response)
-        ambientes = self.extract_rooms(response)
-        dormitorios = self.extract_bedrooms(response)
-        baños = self.extract_bathrooms(response)
-        descripcion = self.extract_description(response)
-                
-        item = {
-            'id_propiedad': property_id,
-            'precio': precio_principal.strip() if precio_principal else None,
-            'moneda': moneda,
-            'expensas': expensas.strip() if expensas else None,
-            'direccion': direccion.strip() if direccion else None,
-            'barrio_zona': barrio_zona.strip() if barrio_zona else None,
-            'superficie': superficie.strip() if superficie else None,
-            'ambientes': ambientes.strip() if ambientes else None,
-            'dormitorios': dormitorios.strip() if dormitorios else None,
-            'baños': baños.strip() if baños else None,
-            'descripcion': descripcion[:500] if descripcion else None,
-            'url': response.url,
-            'fecha_extraccion': time.strftime('%Y-%m-%d'),
-            'fuente': 'ZonaProp',
-        }
-        
-        # Registrar si falta información clave para depuración
-        if not precio_principal or not direccion or not barrio_zona:
-            self.logger.debug(f"Datos incompletos para URL: {response.url}")
-        
-        yield item
-
-    def extract_property_id(self, url):
-        """Extrae el ID de la propiedad desde la URL"""
-        try:
-            # Método más directo para extraer ID
-            if '-' in url:
-                parts = url.strip('/').split('-')
-                last_part = parts[-1]
-                if last_part.isdigit():
-                    return last_part
-                
-            # Método alternativo
-            parsed_url = urlparse(url)
-            path = parsed_url.path
-            if path.endswith('.html'):
-                path = path[:-5]
-            parts = path.split('-')
-            for part in parts:
-                if part.isdigit() and len(part) > 5:
-                    return part
-        except:
-            pass
-        return None
-    
-    def extract_price_and_currency(self, response):
-        """Extrae el precio y la moneda"""
-        # Selectores más precisos basados en los debugs analizados
-        precio_selectors = [
-            '//div[contains(@class, "postingPrices-module__price") and @data-qa="POSTING_CARD_PRICE"]/text()',
-            '//div[contains(@class, "postingPrices-module__precio")]/text()',
-            '//div[@data-qa="POSTING_CARD_PRICE"]/text()'
-        ]
-        
-        precio_principal = None
-        moneda = None
-        
-        # Intentar con XPath
-        for selector in precio_selectors:
-            precio_principal = response.xpath(selector).get()
-            if precio_principal:
-                precio_principal = precio_principal.strip()
-                if 'USD' in precio_principal or 'U$S' in precio_principal or 'U$D' in precio_principal:
-                    moneda = 'USD'
-                elif '$' in precio_principal:
-                    moneda = 'ARS'
-                break
-        
-        return precio_principal, moneda
-    
-    def extract_expensas(self, response):
-        """Extrae el valor de las expensas"""
-        expensas_selectors = [
-            '//div[contains(@class, "postingPrices-module__expenses") and @data-qa="expensas"]/text()',
-            '//div[contains(@class, "postingPrices-module__expenses-property-listing")]/text()'
-        ]
-        
-        expensas = None
-        for selector in expensas_selectors:
-            expensas = response.xpath(selector).get()
-            if expensas:
-                expensas = expensas.strip()
-                break
-        
-        return expensas
-    
-    def extract_location(self, response):
-        """Extrae la dirección de la propiedad"""
-        direccion_selectors = [
-            '//div[contains(@class, "postingLocations-module__location-address-in-listing")]/text()',
-            '//div[contains(@class, "postingLocations-module__location-address")]/text()'
-        ]
-        
-        direccion = None
-        for selector in direccion_selectors:
-            direccion = response.xpath(selector).get()
-            if direccion:
-                direccion = direccion.strip()
-                break
-        
-        return direccion
-    
-    def extract_zone(self, response):
-        """Extrae el barrio o zona de la propiedad"""
-        barrio_selectors = [
-            '//h2[contains(@class, "postingLocations-module__location-text") and @data-qa="POSTING_CARD_LOCATION"]/text()',
-            '//h2[contains(@class, "postingLocations-module__location-text")]/text()'
-        ]
-        
-        barrio_zona = None
-        for selector in barrio_selectors:
-            barrio_zona = response.xpath(selector).get()
-            if barrio_zona:
-                barrio_zona = barrio_zona.strip()
-                break
-        
-        return barrio_zona
-    
-    def extract_area(self, response):
-        """Extrae la superficie total de la propiedad"""
-        superficie_selectors = [
-            '//span[contains(@class, "postingMainFeatures-module__posting-main-features-span") and contains(text(), "m² tot")]/text()',
-            '//h3[contains(@class, "postingMainFeatures-module__posting-main-features-block")]//span[contains(text(), "m² tot")]/text()'
-        ]
-        
-        superficie = None
-        for selector in superficie_selectors:
-            superficie = response.xpath(selector).get()
-            if superficie:
-                superficie = superficie.strip()
-                break
-        
-        return superficie
-    
-    def extract_rooms(self, response):
-        """Extrae cantidad de ambientes"""
-        ambientes_selectors = [
-            '//span[contains(@class, "postingMainFeatures-module__posting-main-features-span") and contains(text(), "amb")]/text()',
-            '//h3[contains(@class, "postingMainFeatures-module__posting-main-features-block")]//span[contains(text(), "amb")]/text()'
-        ]
-        
-        ambientes = None
-        for selector in ambientes_selectors:
-            ambientes = response.xpath(selector).get()
-            if ambientes:
-                ambientes = ambientes.strip()
-                break
-        
-        return ambientes
-    
-    def extract_bedrooms(self, response):
-        """Extrae cantidad de dormitorios"""
-        dormitorios_selectors = [
-            '//span[contains(@class, "postingMainFeatures-module__posting-main-features-span") and contains(text(), "dorm")]/text()',
-            '//h3[contains(@class, "postingMainFeatures-module__posting-main-features-block")]//span[contains(text(), "dorm")]/text()'
-        ]
-        
-        dormitorios = None
-        for selector in dormitorios_selectors:
-            dormitorios = response.xpath(selector).get()
-            if dormitorios:
-                dormitorios = dormitorios.strip()
-                break
-        
-        return dormitorios
-    
-    def extract_bathrooms(self, response):
-        """Extrae cantidad de baños"""
-        baños_selectors = [
-            '//span[contains(@class, "postingMainFeatures-module__posting-main-features-span") and contains(text(), "baño")]/text()',
-            '//h3[contains(@class, "postingMainFeatures-module__posting-main-features-block")]//span[contains(text(), "baño")]/text()'
-        ]
-        
-        baños = None
-        for selector in baños_selectors:
-            baños = response.xpath(selector).get()
-            if baños:
-                baños = baños.strip()
-                break
-        
-        return baños
-    
-    def extract_description(self, response):
-        """Extrae la descripción de la propiedad"""
-        descripcion_selectors = [
-            '//h3[contains(@class, "postingCard-module__posting-description")]//a/text()',
-            '//div[contains(@class, "postingCard-module__posting-description")]/a/text()',
-            '//p[contains(@class, "description")]/text()'
-        ]
-        
-        descripcion_items = []
-        for selector in descripcion_selectors:
-            items = response.xpath(selector).getall()
-            if items:
-                descripcion_items.extend(items)
-                
-        if descripcion_items:
-            return ' '.join([d.strip() for d in descripcion_items])
-            
-        return None
+            yield response.follow(
+                next_page, 
+                callback=self.parse, 
+                headers=headers,
+                meta={'cookiejar': response.meta.get('cookiejar')},  # Mantener las cookies
+                dont_filter=True  # No filtrar URLs duplicadas
+            )

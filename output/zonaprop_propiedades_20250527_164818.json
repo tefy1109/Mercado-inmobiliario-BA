@@ -1,0 +1,152 @@
+[
+  {
+    "precio_alquiler": 750000,
+    "expensas": 218000,
+    "scraped_at": "2025-05-27T16:45:45.139381"
+  },
+  {
+    "precio_alquiler": 400000,
+    "expensas": 110000,
+    "scraped_at": "2025-05-27T16:45:49.715348"
+  },
+  {
+    "precio_alquiler": 650000,
+    "expensas": null,
+    "scraped_at": "2025-05-27T16:45:53.739664"
+  },
+  {
+    "precio_alquiler": 480000,
+    "expensas": 150000,
+    "scraped_at": "2025-05-27T16:45:58.073336"
+  },
+  {
+    "precio_alquiler": 450000,
+    "expensas": 92000,
+    "scraped_at": "2025-05-27T16:46:04.574903"
+  },
+  {
+    "precio_alquiler": 570000,
+    "expensas": 130000,
+    "scraped_at": "2025-05-27T16:46:10.356342"
+  },
+  {
+    "precio_alquiler": 550000,
+    "expensas": 80000,
+    "scraped_at": "2025-05-27T16:46:14.970847"
+  },
+  {
+    "precio_alquiler": 700000,
+    "expensas": 23000,
+    "scraped_at": "2025-05-27T16:46:20.135122"
+  },
+  {
+    "precio_alquiler": 500000,
+    "expensas": null,
+    "scraped_at": "2025-05-27T16:46:24.651234"
+  },
+  {
+    "precio_alquiler": 700000,
+    "expensas": null,
+    "scraped_at": "2025-05-27T16:46:31.114361"
+  },
+  {
+    "precio_alquiler": 600000,
+    "expensas": 115000,
+    "scraped_at": "2025-05-27T16:46:37.645352"
+  },
+  {
+    "precio_alquiler": 800000,
+    "expensas": null,
+    "scraped_at": "2025-05-27T16:46:40.555382"
+  },
+  {
+    "precio_alquiler": 350000,
+    "expensas": 130000,
+    "scraped_at": "2025-05-27T16:46:46.256106"
+  },
+  {
+    "precio_alquiler": 830000,
+    "expensas": 170000,
+    "scraped_at": "2025-05-27T16:46:52.927843"
+  },
+  {
+    "precio_alquiler": 1100000,
+    "expensas": 450000,
+    "scraped_at": "2025-05-27T16:46:58.153624"
+  },
+  {
+    "precio_alquiler": 500000,
+    "expensas": 100000,
+    "scraped_at": "2025-05-27T16:47:04.158551"
+  },
+  {
+    "precio_alquiler": 450000,
+    "expensas": 160000,
+    "scraped_at": "2025-05-27T16:47:08.574307"
+  },
+  {
+    "precio_alquiler": 450000,
+    "expensas": 80000,
+    "scraped_at": "2025-05-27T16:47:14.487445"
+  },
+  {
+    "precio_alquiler": 650000,
+    "expensas": 45000,
+    "scraped_at": "2025-05-27T16:47:18.515267"
+  },
+  {
+    "precio_alquiler": 450000,
+    "expensas": 120000,
+    "scraped_at": "2025-05-27T16:47:23.391476"
+  },
+  {
+    "precio_alquiler": 550000,
+    "expensas": 70000,
+    "scraped_at": "2025-05-27T16:47:28.299288"
+  },
+  {
+    "precio_alquiler": 370000,
+    "expensas": 140000,
+    "scraped_at": "2025-05-27T16:47:33.853208"
+  },
+  {
+    "precio_alquiler": 900000,
+    "expensas": 156790,
+    "scraped_at": "2025-05-27T16:47:38.435013"
+  },
+  {
+    "precio_alquiler": 400,
+    "expensas": 58000,
+    "scraped_at": "2025-05-27T16:47:43.212012"
+  },
+  {
+    "precio_alquiler": 600000,
+    "expensas": 123000,
+    "scraped_at": "2025-05-27T16:47:48.311797"
+  },
+  {
+    "precio_alquiler": 480000,
+    "expensas": 150000,
+    "scraped_at": "2025-05-27T16:47:53.142911"
+  },
+  {
+    "precio_alquiler": 420000,
+    "expensas": null,
+    "scraped_at": "2025-05-27T16:47:59.648108"
+  },
+  {
+    "precio_alquiler": 420000,
+    "expensas": 68693,
+    "scraped_at": "2025-05-27T16:48:06.851659"
+  },
+  {
+    "precio_alquiler": 390000,
+    "expensas": 110000,
+    "scraped_at": "2025-05-27T16:48:11.423692"
+  },
+  {
+    "precio_alquiler": 390000,
+    "expensas": 170000,
+    "scraped_at": "2025-05-27T16:48:16.488147"
+  }
+]
