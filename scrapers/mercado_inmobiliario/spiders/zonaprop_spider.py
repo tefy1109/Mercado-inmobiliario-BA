@@ -12,62 +12,6 @@ class ZonapropSpider(scrapy.Spider):
         'https://www.zonaprop.com.ar/departamentos-alquiler-flores.html',
     ]
     
-    custom_settings = {
-        'DOWNLOAD_DELAY': 7,  # Mayor delay
-        'RANDOMIZE_DOWNLOAD_DELAY': True,
-        'CONCURRENT_REQUESTS': 1,
-        'CONCURRENT_REQUESTS_PER_DOMAIN': 1,
-        # Desactivar cache para evitar problemas con 403
-        'HTTPCACHE_ENABLED': False,
-        # Más intentos de retry
-        'RETRY_TIMES': 8,
-        # Headers personalizados
-        'DEFAULT_REQUEST_HEADERS': {
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-            'Accept-Language': 'es-AR,es;q=0.8,en-US;q=0.5,en;q=0.3',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'DNT': '1',
-            'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1',
-            'Sec-Fetch-Dest': 'document',
-            'Sec-Fetch-Mode': 'navigate',
-            'Sec-Fetch-Site': 'same-origin',
-            'Sec-Fetch-User': '?1',
-            'Pragma': 'no-cache',
-            'Cache-Control': 'no-cache',
-        }
-    }
-
-    def start_requests(self):
-        """Método para iniciar las solicitudes"""
-        for url in self.start_urls:
-            # Usar Google como referer para la primera solicitud
-            headers = {
-                'Referer': 'https://www.google.com/search?q=alquiler+departamentos+flores+zonaprop',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
-            }
-            
-            # Añadir cookies que simulan navegación previa
-            cookies = {
-                'visita_id': str(random.randint(1000000, 9999999)),
-                'c_user_id': str(random.randint(1000000, 9999999)),
-                'c_visitor_id': str(random.randint(1000000, 9999999)),
-                'gdpr': 'true',
-                '_ga': f'GA1.3.{random.randint(1000000, 9999999)}.{int(time.time())}',
-                '_gid': f'GA1.3.{random.randint(1000000, 9999999)}.{int(time.time())}',
-            }
-            
-            # Simulamos que venimos de Google
-            self.logger.info(f"Iniciando solicitud a {url} con referer de Google")
-            yield scrapy.Request(
-                url=url, 
-                callback=self.parse,
-                headers=headers,
-                cookies=cookies,
-                meta={'cookiejar': 1},  # Usar un cookiejar para mantener las cookies
-                dont_filter=True
-            )
-
     def parse(self, response):
         """Extrae los datos de las propiedades desde la página principal"""
         # Debug - Guardar la respuesta para inspección

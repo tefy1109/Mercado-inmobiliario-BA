@@ -164,3 +164,35 @@ class JavaScriptMiddleware:
         if b'javascript' in response.body.lower():
             spider.logger.warning(f"JavaScript detected in {request.url}")
         return response
+
+
+class ZonapropStartRequestsMiddleware:
+    """Middleware para modificar las solicitudes iniciales de ZonaProp"""
+    
+    @classmethod
+    def from_crawler(cls, crawler):
+        s = cls()
+        return s
+        
+    def process_start_request(self, request, spider):
+        """Procesa las solicitudes iniciales"""
+        if spider.name == 'zonaprop_spider':
+            # Modificar referer para aparentar venir de Google
+            request.headers['Referer'] = 'https://www.google.com/search?q=alquiler+departamentos+flores+zonaprop'
+            request.headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
+            
+            # Añadir cookies para simular navegación previa
+            request.cookies = {
+                'visita_id': str(random.randint(1000000, 9999999)),
+                'c_user_id': str(random.randint(1000000, 9999999)),
+                'c_visitor_id': str(random.randint(1000000, 9999999)),
+                'gdpr': 'true',
+                '_ga': f'GA1.3.{random.randint(1000000, 9999999)}.{int(time.time())}',
+                '_gid': f'GA1.3.{random.randint(1000000, 9999999)}.{int(time.time())}',
+            }
+            
+            # Configurar para usar cookiejar y no filtrar
+            request.meta['cookiejar'] = 1
+            request.meta['dont_filter'] = True
+        
+        return request

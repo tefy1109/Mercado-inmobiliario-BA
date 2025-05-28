@@ -102,3 +102,30 @@ COOKIES_DEBUG = True
 
 # Para depurar problemas de conectividad
 DUPEFILTER_DEBUG = True
+
+# Configuraciones específicas para el spider ZonaProp
+# (trasladadas desde custom_settings del spider)
+ZONAPROP_SPIDER_SETTINGS = {
+    'DOWNLOAD_DELAY': 7,
+    'RANDOMIZE_DOWNLOAD_DELAY': True,
+    'CONCURRENT_REQUESTS': 1,
+    'CONCURRENT_REQUESTS_PER_DOMAIN': 1,
+    'HTTPCACHE_ENABLED': False,
+    'RETRY_TIMES': 8,
+}
+
+# Headers personalizados para ZonaProp
+ZONAPROP_DEFAULT_HEADERS = {
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    'Accept-Language': 'es-AR,es;q=0.8,en-US;q=0.5,en;q=0.3',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'DNT': '1',
+    'Connection': 'keep-alive',
+    'Upgrade-Insecure-Requests': '1',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'same-origin',
+    'Sec-Fetch-User': '?1',
+    'Pragma': 'no-cache',
+    'Cache-Control': 'no-cache',
+}
