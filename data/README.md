@@ -4,12 +4,12 @@ Este directorio contiene los datos extraídos por los scrapers del proyecto.
 
 ## Estructura
 
-- `raw/`: Carpeta donde se guardan los datos JSON sin procesar directamente extraídos por los scrapers
+- `data/`: Carpeta donde se guardan los datos JSON sin procesar directamente extraídos por los scrapers
 - `propiedades.db`: Base de datos SQLite que contiene todos los datos procesados y estructurados
 
 ## Formato de archivos JSON
 
-Los archivos JSON en la carpeta `raw/` tienen el formato `{nombre_spider}_{timestamp}.json` y contienen una lista de propiedades con la siguiente estructura:
+Los archivos JSON en la carpeta `data/` tienen el formato `{nombre_spider}_{timestamp}.json` y contienen una lista de propiedades con la siguiente estructura:
 
 ```json
 [

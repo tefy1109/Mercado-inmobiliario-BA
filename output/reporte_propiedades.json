@@ -1,0 +1,25 @@
+{
+    "fecha_generacion": "2025-05-30 17:18:16",
+    "total_propiedades": 375,
+    "propiedades_por_moneda_original": {
+        "ARS": 357,
+        "USD": 18
+    },
+    "precio_promedio_ars": 559915.9383753501,
+    "precio_promedio_usd": 1163.888888888889,
+    "precio_promedio_total_ars": 588906.64,
+    "precio_mediano_total_ars": 500000.0,
+    "superficie_promedio": 52.30026809651474,
+    "distribucion_ambientes": {
+        "2": 139,
+        "1": 118,
+        "3": 80,
+        "4": 29,
+        "0": 5,
+        "5": 4
+    },
+    "propiedades_por_barrio": {
+        "Flores": 375
+    },
+    "tasa_conversion_usd_ars": 1000
+}
