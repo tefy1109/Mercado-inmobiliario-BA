@@ -2,25 +2,166 @@
 
 Este proyecto realiza web scraping y análisis de datos del mercado inmobiliario de Buenos Aires, Argentina, utilizando técnicas de extracción automatizada para obtener información de propiedades en alquiler desde ZonaProp.
 
-## 📁 Estructura del Proyecto
-
-```
-Mercado-inmobiliario-BA/
-├── selenium_zonaprop.py           # Script principal de web scraping
-├── output/                       # Datos extraídos (JSON y CSV)
-├── etl/                         # limpieza, tratado y extracción
-├── data/                         # Datos procesados
-├── powerBI/                         # analisis de datos
-└── README.md                     # Documentación del proyecto
-```
-
 ## 🎯 Objetivos del Proyecto
 
 - **Web Scraping Avanzado**: Extracción automatizada de datos inmobiliarios de ZonaProp
-- **Análisis de Precios**: Obtener información detallada de precios de alquiler
+- **Análisis de Datos**: Obtener información detallada de precios de alquiler y analizar los mismo, visualizando el resultado en Power BI
 - **Datos Estructurados**: Generar datasets en formatos JSON y CSV
 - **Escalabilidad**: Procesamiento de múltiples páginas con manejo de errores
 
+## 📁 Estructura del Proyecto
+
+    Mercado-inmobiliario-BA/
+    ├── selenium_zonaprop.py           # Script principal de web scraping
+    ├── test_connection.py             # Script para probar conectividad 
+    ├── output/                        # Datos extraídos (JSON y CSV)
+    ├── etl/                          # Limpieza, tratado y extracción
+    │   └── etl_propiedades.py        # Script de transformación de datos
+    ├── data/                         # Datos procesados y base de datos
+    ├── powerBI/                      # Análisis de datos con Power BI
+    └── README.md                     # Documentación del proyecto
+
+## 📚 Librerías Requeridas
+
+### Para Web Scraping (selenium_zonaprop.py y test_connection.py)
+```bash
+# Selenium para automatización web
+pip install selenium
+
+# Requests para pruebas de conectividad HTTP
+pip install requests
+
+# WebDriver Manager (opcional, para gestión automática de drivers)
+pip install webdriver-manager
+```
+
+**Uso de librerías:**
+- **selenium**: Automatización del navegador web para extraer datos de páginas dinámicas
+- **requests**: Realizar peticiones HTTP para probar conectividad antes del scraping
+- **webdriver-manager**: Gestión automática de ChromeDriver (opcional)
+
+### Para ETL y Análisis (etl_propiedades.py)
+```bash
+# Librerías principales de análisis de datos
+pip install pandas numpy
+
+# Visualización de datos
+pip install matplotlib seaborn
+
+# Base de datos y formatos adicionales
+pip install sqlalchemy openpyxl
+```
+
+**Uso de librerías:**
+- **pandas**: Manipulación y análisis de datos estructurados
+- **numpy**: Operaciones numéricas y matrices
+- **matplotlib**: Creación de gráficos y visualizaciones básicas
+- **seaborn**: Visualizaciones estadísticas avanzadas
+- **sqlalchemy**: Conexión y operaciones con bases de datos
+- **openpyxl**: Lectura y escritura de archivos Excel
+
+### Instalación Completa
+```bash
+# Instalar todas las dependencias de una vez
+pip install selenium requests pandas numpy matplotlib seaborn sqlalchemy openpyxl webdriver-manager
+```
+
+## 🚀 Ejecución del Proyecto
+
+### Paso 1: Verificar Conectividad
+Antes de realizar el scraping, es recomendable verificar que ZonaProp sea accesible:
+
+```bash
+python test_connection.py
+```
+
+**¿Qué hace este script?**
+- Prueba la conectividad con ZonaProp usando requests HTTP
+- Verifica si el sitio está bloqueando conexiones automáticas
+- Genera un archivo `test_connection_response.html` para inspección manual
+- Detecta posibles captchas o páginas de bloqueo
+
+**Salida esperada:**
+```
+✅ Conexión exitosa!
+✅ El contenido parece ser el esperado (listado de propiedades)
+Respuesta guardada en 'test_connection_response.html'
+```
+
+### Paso 2: Extracción de Datos (Web Scraping)
+Una vez verificada la conectividad, ejecutar el scraper principal:
+
+```bash
+python selenium_zonaprop.py
+```
+
+**¿Qué hace este script?**
+- Automatiza Chrome con Selenium para navegar ZonaProp
+- Extrae información de propiedades de múltiples páginas
+- Implementa estrategias anti-detección (user-agents rotativos, delays humanos)
+- Maneja captchas y errores de conexión
+- Genera archivos de debug en caso de problemas
+
+**Archivos generados:**
+- `output/zonaprop_propiedades_YYYYMMDD_HHMMSS.json`
+- `output/zonaprop_propiedades_YYYYMMDD_HHMMSS.csv`
+- Screenshots de debug (si es necesario)
+
+**Salida esperada:**
+```
+🚀 Iniciando scraper avanzado de ZonaProp con Selenium
+✓ Directorio output creado/verificado
+Procesando página 1: https://www.zonaprop.com.ar/...
+✅ Página 1 scrapeada exitosamente. 20 propiedades extraídas.
+✅ Proceso completado. Se extrajeron 150 propiedades de múltiples páginas.
+```
+
+### Paso 3: Procesamiento y Limpieza de Datos (ETL)
+Transformar los datos extraídos para análisis:
+
+```bash
+python etl/etl_propiedades.py
+```
+
+**¿Qué hace este script?**
+- **Extract**: Carga datos del archivo JSON generado por el scraper
+- **Transform**: 
+  - Detecta y convierte precios en USD a pesos argentinos
+  - Limpia direcciones y extrae barrios
+  - Calcula métricas derivadas (precio por m², costo total)
+  - Categoriza propiedades por tamaño
+  - Maneja valores nulos y duplicados
+- **Load**: Guarda datos en múltiples formatos
+
+**Archivos generados:**
+- `data/propiedades_transformadas.csv` - Dataset limpio en CSV
+- `data/propiedades_transformadas.xlsx` - Dataset en Excel
+- `data/propiedades.db` - Base de datos SQLite
+- `output/reporte_propiedades.json` - Reporte estadístico
+- `output/precios_por_moneda.png` - Visualización de precios por moneda
+- `output/superficie_vs_precio.png` - Gráfico superficie vs precio
+
+**Transformaciones principales:**
+1. **Conversión de monedas**: Precios < $5000 se consideran USD y se convierten a ARS
+2. **Limpieza de direcciones**: Extracción de barrios y normalización
+3. **Métricas calculadas**: 
+   - Precio por m²
+   - Costo total (alquiler + expensas)
+   - Categorías de tamaño
+4. **Manejo de nulos**: Estrategias específicas por tipo de dato
+
+**Salida esperada:**
+```
+Iniciando proceso ETL...
+Número de registros cargados: 150
+Registros después de eliminar duplicados: 148
+Propiedades por tipo de moneda:
+ARS    120
+USD     28
+Se convirtieron 28 precios de USD a ARS (tasa: 1 USD = 1000 ARS)
+Datos guardados en CSV: /home/estefany/cursos/Mercado-inmobiliario-BA/data/propiedades_transformadas.csv
+Proceso ETL completado con éxito!
+```
 ## 🛠 Características del Scraper
 
 ### Funcionalidades Principales
@@ -62,13 +203,6 @@ El scraper extrae la siguiente información de cada propiedad:
 - **Google Chrome** (última versión)
 - **ChromeDriver** (automáticamente gestionado por Selenium)
 
-### Dependencias
-
-```bash
-pip install selenium
-pip install webdriver-manager  # Opcional, para gestión automática de drivers
-```
-
 ### Dependencias del Sistema
 
 ```bash
@@ -84,12 +218,6 @@ brew install --cask google-chrome
 ```
 
 ## 🎮 Uso del Scraper
-
-### Ejecución Básica
-
-```bash
-python selenium_zonaprop.py
-```
 
 ### Configuración Personalizada
 
