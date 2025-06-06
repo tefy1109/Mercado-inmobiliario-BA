@@ -4,7 +4,7 @@ Este proyecto realiza web scraping y análisis de datos del mercado inmobiliario
 
 ## 📁 Estructura del Proyecto
 
-
+```
 Mercado-inmobiliario-BA/
 ├── selenium_zonaprop.py           # Script principal de web scraping
 ├── output/                       # Datos extraídos (JSON y CSV)
@@ -12,7 +12,7 @@ Mercado-inmobiliario-BA/
 ├── data/                         # Datos procesados
 ├── powerBI/                         # analisis de datos
 └── README.md                     # Documentación del proyecto
-
+```
 
 ## 🎯 Objetivos del Proyecto
 
