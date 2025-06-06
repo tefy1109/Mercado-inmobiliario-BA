@@ -1,12 +1,10 @@
-# README.md - /home/estefany/cursos/Mercado-inmobiliario-BA/README.md
-
 # Análisis del Mercado Inmobiliario de Buenos Aires
 
 Este proyecto realiza web scraping y análisis de datos del mercado inmobiliario de Buenos Aires, Argentina, utilizando técnicas de extracción automatizada para obtener información de propiedades en alquiler desde ZonaProp.
 
 ## 📁 Estructura del Proyecto
 
-```
+
 Mercado-inmobiliario-BA/
 ├── selenium_zonaprop.py           # Script principal de web scraping
 ├── output/                       # Datos extraídos (JSON y CSV)
@@ -14,7 +12,7 @@ Mercado-inmobiliario-BA/
 ├── data/                         # Datos procesados
 ├── powerBI/                         # analisis de datos
 └── README.md                     # Documentación del proyecto
-```
+
 
 ## 🎯 Objetivos del Proyecto
 
